@@ -1,0 +1,16 @@
+@import "./typography.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --color-on-surface: 210 210 210;
+    --color-primary: 239 176 255;
+    --color-primary-container: 92 26 108;
+    --color-on-primary-container: 245 207 255;
+    --color-surface: 48 47 47;
+    --color-background: 36 36 36;
+    --color-outline: 189 189 189;
+    --color-on-primary: 76 27 89;
+    -webkit-tap-highlight-color: transparent;
+}
