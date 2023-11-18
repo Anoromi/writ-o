@@ -16,7 +16,7 @@ return new class extends Migration
             $table->id();
             $table->string("title");
             $table->foreignIdFor(User::class);
-            $table->json("data");
+            $table->json("data")->nullable();
             $table->timestamps();
         });
     }

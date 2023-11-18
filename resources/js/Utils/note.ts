@@ -9,6 +9,6 @@ export type Note = {
 
 
 export type NoteData = {
-    text: string
+    text: string | null
     next?: NoteData[]
 }

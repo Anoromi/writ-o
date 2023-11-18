@@ -37,7 +37,7 @@ export default function Index({ auth: { user }, notes }: Props) {
             <Authenticated header={"hello there"} user={user}>
                 <div className="flex justify-between px-8 pt-8">
                     <h1 className="text-3xl sm:text-4xl">Notes</h1>
-                    <CommonButton className="ripple-on-surface" textType="icon" buttonType="blank" onClick={to}>
+                    <CommonButton className="ripple-on-surface" shapeType="icon" buttonType="blank" onClick={to}>
                         <FiPlus style={{ fontSize: "28px" }}/>
                     </CommonButton>
                 </div>
@@ -55,8 +55,6 @@ export default function Index({ auth: { user }, notes }: Props) {
         </>
     );
 }
-
-
 
 function PageLink({ link }: { link: PaginationLink }) {
     const { buttonData, rippleData } = useRipple();
@@ -86,10 +84,15 @@ function PageLink({ link }: { link: PaginationLink }) {
 }
 
 function Note({ note }: { note: DisplayedNote }) {
+    let text = note.title
+    if(text.length === 0)
+        text = "Empty note"
     return (
         <>
-            <RippleButton as={Link} componentProps={{href:''}} className="text-xl ripple-on-surface inline-block w-full py-2 px-2 rounded-md">
-                {note.title}
+            <RippleButton as={Link} componentProps={{href:route("notes.show", {
+                        note: note.id
+                    })}} className="text-xl ripple-on-surface inline-block w-full py-2 px-2 rounded-md">
+                {text}
             </RippleButton>
         </>
     );

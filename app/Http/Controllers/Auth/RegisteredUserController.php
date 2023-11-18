@@ -48,12 +48,12 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        for ($i = 0; $i < 20; $i++) {
-            $user->note()->create([
-                "title" => "Hello there $i",
-                "data" => [],
-            ]);
-        }
+        //for ($i = 0; $i < 20; $i++) {
+        //    $user->note()->create([
+        //        "title" => "Hello there $i",
+        //        "data" => [],
+        //    ]);
+        //}
 
 
         return redirect(RouteServiceProvider::HOME);

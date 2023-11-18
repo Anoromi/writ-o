@@ -25,12 +25,12 @@ class NotesController extends Controller
         $note = GetUser::exec($request)->note()->create([
             'title' => '',
             'data' => [
-                'text' => '',
+                'text' => null,
+                'next' => []
             ]
         ]);
         return to_route('notes.show', [
             'note' => $note->id
-            //'note' => 'hello'
         ]);
     }
 
