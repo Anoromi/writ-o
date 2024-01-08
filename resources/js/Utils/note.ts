@@ -2,9 +2,9 @@
 
 
 export type Note = {
-    title: string,
+    title: string | null,
     id: string,
-    data: NoteData
+    data: string
 }
 
 

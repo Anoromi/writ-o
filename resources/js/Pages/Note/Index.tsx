@@ -7,7 +7,7 @@ import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { cn } from "@/Utils/cn";
 import { PageProps } from "@/types";
 import { Link, router } from "@inertiajs/react";
-import { FiPlus } from "react-icons/fi";
+import { FiDelete, FiPlus } from "react-icons/fi";
 
 type PaginationLink = { url: string | null; label: string; active: boolean };
 type PaginatedData<T> = {
@@ -27,26 +27,40 @@ type Props = PageProps & {
 };
 
 export default function Index({ auth: { user }, notes }: Props) {
-    console.log(notes);
     function to() {
-        console.log('hello there')
-        router.post('/note', {})
+        router.post("/note", {});
+    }
+
+    function deleteNote(note: DisplayedNote) {
+        router.delete(`/note/${note.id}`);
+        router.reload({
+                    only: ['notes']
+                })
     }
     return (
         <>
             <Authenticated header={"hello there"} user={user}>
                 <div className="flex justify-between px-8 pt-8">
                     <h1 className="text-3xl sm:text-4xl">Notes</h1>
-                    <CommonButton className="ripple-on-surface" shapeType="icon" buttonType="blank" onClick={to}>
-                        <FiPlus style={{ fontSize: "28px" }}/>
+                    <CommonButton
+                        className="ripple-on-surface"
+                        shapeType="icon"
+                        buttonType="blank"
+                        onClick={to}
+                    >
+                        <FiPlus style={{ fontSize: "28px" }} />
                     </CommonButton>
                 </div>
-                <div className="mt-8 flex-1 mx-6">
+                <div className="mx-6 mt-8 flex-1">
                     {notes.data.map((note) => (
-                        <Note key={note.id} note={note} />
+                        <Note
+                            key={note.id}
+                            note={note}
+                            deleteNote={() => deleteNote(note)}
+                        />
                     ))}
                 </div>
-                <li className="flex flex-wrap justify-center gap-x-2 mb-8">
+                <li className="mb-8 flex flex-wrap justify-center gap-x-2">
                     {notes.links.map((v, i) => (
                         <PageLink link={v} key={i} />
                     ))}
@@ -74,26 +88,49 @@ function PageLink({ link }: { link: PaginationLink }) {
 
     if (link.url !== null)
         return (
-            <Link href={link.url} {...buttonData} className={linkStyles}>
-                <div {...rippleData} />
-                {fixedLabel}
-            </Link>
+            <div>
+                <Link href={link.url} {...buttonData} className={linkStyles}>
+                    <div {...rippleData} />
+                    {fixedLabel}
+                </Link>
+            </div>
         );
 
     return <div className={linkStyles}>{fixedLabel}</div>;
 }
 
-function Note({ note }: { note: DisplayedNote }) {
-    let text = note.title
-    if(text.length === 0)
-        text = "Empty note"
+function Note({
+    note,
+    deleteNote,
+}: {
+    note: DisplayedNote;
+    deleteNote: () => void;
+}) {
+    let text = note.title;
+    if (text.length === 0) text = "Empty note";
+
     return (
         <>
-            <RippleButton as={Link} componentProps={{href:route("notes.show", {
-                        note: note.id
-                    })}} className="text-xl ripple-on-surface inline-block w-full py-2 px-2 rounded-md">
-                {text}
-            </RippleButton>
+            <div className="flex w-full gap-x-3 items-center">
+                <RippleButton
+                    as={Link}
+                    componentProps={{
+                        href: route("notes.show", {
+                            note: note.id,
+                        }),
+                    }}
+                    className="inline-block flex-1 rounded-md px-2 py-2 text-xl ripple-on-surface"
+                >
+                    {text}
+                </RippleButton>
+                <CommonButton
+                    shapeType="icon"
+                    buttonType="blank"
+                    onClick={deleteNote}
+                >
+                    <FiDelete />
+                </CommonButton>
+            </div>
         </>
     );
 }

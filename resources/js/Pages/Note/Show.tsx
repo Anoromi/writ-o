@@ -3,9 +3,11 @@
 import CommonButton from "@/Components/CommonButton";
 import RippleButton from "@/Components/ripple/rippleButton";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
+import { cn } from "@/Utils/cn";
 import { Note, NoteData } from "@/Utils/note";
 import { PageProps } from "@/types";
-import { useMemo, useRef, useState } from "react";
+import { router } from "@inertiajs/react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FiArrowLeft, FiChevronUp, FiPlus } from "react-icons/fi";
 import { Descendant, createEditor } from "slate";
 import { Editable, Slate, withReact } from "slate-react";
@@ -14,22 +16,29 @@ type Props = {
     note: Note;
 } & PageProps;
 export default function ShowNote({ note, auth: { user } }: Props) {
-    console.log(note);
 
-    const currentParapraph = useRef<NoteData>(note.data);
+    const noteData: NoteData = useMemo(() => JSON.parse(note.data), []);
+    const initialText = useMemo(() => deserializeSlateText(noteData.text), []);
+
+    const currentParapraph = useRef<NoteData>(noteData);
 
     const [previousParagraphs, setPreviousParagraphs] = useState<NoteData[]>(
         [],
     );
     const [nextParaphaphs, setNextParagrpahs] = useState<NoteData[]>(
-        note.data.next ?? [],
+        noteData.next ?? [],
     );
 
     //const [currentText, setCurrentText] = useState(
     //    deserializeSlateText(note.data.text),
     //);
-    const [title, setTitle] = useState(deserializeSlateText(note.title));
-    const [text, setText] = useState(deserializeSlateText(note.data.text));
+    const [title, setTitle] = useState(createInitialSlateText(note.title ?? ''));
+    const [text, setText] = useState(initialText);
+    const [currentKey, setCurrentKey] = useState(0);
+
+    function incrementKey() {
+        setCurrentKey(currentKey + 1);
+    }
 
     function saveCurrent() {
         currentParapraph.current.text = JSON.stringify(text);
@@ -37,30 +46,39 @@ export default function ShowNote({ note, auth: { user } }: Props) {
 
     function moveUp(paragraph: NoteData) {
         saveCurrent();
+        console.log("hello there");
+        console.log("move Up", paragraph);
 
         for (let i = 0; i < previousParagraphs.length; i++) {
-            if (previousParagraphs[i] == paragraph) {
-                setPreviousParagraphs(previousParagraphs.slice(0, i + 1));
+            if (previousParagraphs[i] === paragraph) {
+                setPreviousParagraphs(previousParagraphs.slice(0, i));
                 break;
             }
         }
+
         setNextParagrpahs(paragraph.next ?? []);
 
         currentParapraph.current = paragraph;
         setText(deserializeSlateText(paragraph.text));
+        incrementKey();
     }
 
     function moveDown(paragraph: NoteData) {
+        saveCurrent();
+        console.log("move Down", paragraph);
+
         setPreviousParagraphs([
             ...previousParagraphs,
             currentParapraph.current,
         ]);
         setNextParagrpahs(paragraph.next ?? []);
 
-        saveCurrent();
-
         //currentParapraph.current.next = [...currentParapraph.current.next ?? [], {text: null}];
         currentParapraph.current = paragraph;
+
+        setText(deserializeSlateText(paragraph.text));
+
+        incrementKey();
         //currentParapraph.current.text
     }
 
@@ -79,29 +97,41 @@ export default function ShowNote({ note, auth: { user } }: Props) {
             nextParagraph,
         ];
         currentParapraph.current = nextParagraph;
+        setText(deserializeSlateText(""));
+        incrementKey();
+    }
+
+    function saveNote() {
+        saveCurrent()
+        console.log('being saved', noteData, text)
+        const result = router.put(`/note/${note.id}`, {
+            title: extractSingleText(title),
+            data: JSON.stringify(noteData),
+        } as Note);
+        console.log('result is')
     }
 
     //useEffect(() => {
     //    console.log(currentText);
     //}, [currentText]);
 
-    const list: NoteData[] = [
-        {
-            text: "hehe",
-        },
-        {
-            text: "hehe",
-        },
-        {
-            text: "hehe",
-        },
-        {
-            text: "hehe",
-        },
-        {
-            text: "hehe",
-        },
-    ];
+    //const list: NoteData[] = [
+    //    {
+    //        text: "hehe",
+    //    },
+    //    {
+    //        text: "hehe",
+    //    },
+    //    {
+    //        text: "hehe",
+    //    },
+    //    {
+    //        text: "hehe",
+    //    },
+    //    {
+    //        text: "hehe",
+    //    },
+    //];
 
     return (
         <>
@@ -111,6 +141,7 @@ export default function ShowNote({ note, auth: { user } }: Props) {
                         shapeType="icon"
                         buttonType="outlined"
                         className="border-on-surface text-on-surface surface-on-surface"
+                        onClick={saveNote}
                     >
                         <FiArrowLeft className="text-xl" />
                     </CommonButton>
@@ -120,27 +151,36 @@ export default function ShowNote({ note, auth: { user } }: Props) {
                             setText={setTitle}
                             slateKey={0}
                         />
-                        <PreviousParagraphs list={list} select={moveUp} />
+                        <PreviousParagraphs
+                            list={previousParagraphs}
+                            select={moveUp}
+                        />
                         <Text
                             initialText={text}
                             setText={setText}
-                            slateKey={0}
+                            slateKey={currentKey}
                         />
 
-                        <NextParagraphs list={list} select={moveDown} />
+                        <NextParagraphs
+                            list={nextParaphaphs}
+                            select={moveDown}
+                        />
                     </div>
-                    <div className="h-20">
-
-                    </div>
+                    <div className="h-20"></div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 flex h-16 flex-col items-center mb-20 mx-5 sm:mb-0">
-                    <div className="flex max-w-lg w-full justify-end items-center gap-x-2">
+                <div className="absolute bottom-0 left-0 right-0 mx-5 mb-20 flex h-16 flex-col items-center sm:mb-0">
+                    <div className="flex w-full max-w-lg items-center justify-end gap-x-2">
                         <CommonButton shapeType="extended-fab" className="">
                             <FiChevronUp className="text-lg [stroke-width:3px]" />
                             Up
                         </CommonButton>
-                        <CommonButton className="text-lg" buttonType="outlined" shapeType="icon">
-                        <FiPlus />
+                        <CommonButton
+                            className="text-lg"
+                            buttonType="outlined"
+                            shapeType="icon"
+                            onClick={createDivergence}
+                        >
+                            <FiPlus />
                         </CommonButton>
                     </div>
                 </div>
@@ -158,7 +198,7 @@ function Title({
     setText: (descendant: Descendant[]) => void;
     slateKey: number;
 }) {
-    const editor = useMemo(() => withReact(createEditor()), []);
+    const editor = useMemo(() => withReact(createEditor()), [slateKey]);
 
     return (
         <Slate
@@ -193,6 +233,10 @@ function Text({
     slateKey: number;
 }) {
     const editor = useMemo(() => withReact(createEditor()), []);
+    useEffect(() => {
+        //Transforms.delete(editor);
+        //Transforms.insertNodes(editor, initialText)
+    }, [slateKey]);
     return (
         <Slate
             editor={editor}
@@ -216,6 +260,30 @@ function Text({
     );
 }
 
+function ReadonlySlateText({
+    slateData,
+    className,
+}: {
+    slateData: string;
+    className?: string;
+}) {
+    const editor = useMemo(() => withReact(createEditor()), []);
+
+    let text = slateData;
+    if (text === JSON.stringify(deserializeSlateText(null))) {
+        text = JSON.stringify(createInitialSlateText("Empty"));
+    }
+    return (
+        <Slate editor={editor} initialValue={deserializeSlateText(slateData)}>
+            <Editable
+                placeholder="Empty"
+                className={cn("text-lg outline-none", className)}
+                readOnly
+            />
+        </Slate>
+    );
+}
+
 function PreviousParagraphs({
     list,
     select,
@@ -226,11 +294,18 @@ function PreviousParagraphs({
     return (
         <>
             <div className="flex flex-col gap-y-1 py-4">
-                {list.map((v) => {
+                {list.map((v, i) => {
                     return (
-                        <RippleButton className="flex items-center justify-between rounded-lg px-2 py-2 text-start text-lg opacity-80 surface-on-surface">
-                            <span>{v.text}</span>
-                            <FiChevronUp className="text-lg" />
+                        <RippleButton
+                            className="flex items-center justify-between rounded-lg px-2 py-2 text-start text-lg opacity-50 ripple-on-surface surface-on-surface"
+                            onClick={() => select(v)}
+                            key={v.text}
+                        >
+                            <ReadonlySlateText
+                                slateData={v.text ?? ""}
+                                className="flex-shrink-1 max-h-6  w-full min-w-0 flex-grow-0 self-start"
+                            />
+                            <FiChevronUp className="inline-block flex-grow text-lg" />
                         </RippleButton>
                     );
                 })}
@@ -249,10 +324,17 @@ function NextParagraphs({
     return (
         <>
             <div className="flex flex-col gap-y-1 py-4">
-                {list.map((v) => {
+                {list.map((v, i) => {
                     return (
-                        <RippleButton className="mx-2 flex items-center justify-between rounded-lg px-2 py-2 text-start text-lg opacity-80 surface-on-surface">
-                            <span>{v.text}</span>
+                        <RippleButton
+                            className="flex items-center justify-between rounded-lg px-2 py-2 text-start text-lg opacity-50 ripple-on-surface surface-on-surface"
+                            onClick={() => select(v)}
+                            key={v.text}
+                        >
+                            <ReadonlySlateText
+                                slateData={v.text ?? ""}
+                                className="flex-shrink-1 max-h-6  w-full min-w-0 flex-grow-0 self-start"
+                            />
                         </RippleButton>
                     );
                 })}
@@ -270,7 +352,11 @@ function createInitialSlateText(text: string): Descendant[] {
     ];
 }
 function deserializeSlateText(text: string | null | undefined): Descendant[] {
-    if (text == null || text == undefined) return createInitialSlateText("");
-    if (text == "") return createInitialSlateText("");
-    return createInitialSlateText(text);
+    if (text === null || text === undefined) return createInitialSlateText("");
+    if (text === "") return createInitialSlateText("");
+    return JSON.parse(text);
+}
+
+function extractSingleText(descendant: Descendant[]) {
+    return (descendant as any)[0]['children'][0]['text'] as string;
 }

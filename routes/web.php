@@ -38,9 +38,10 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::resource('note', NotesController::class)->only(['index', 'store', 'show'])->name("index", "notes.index")->name("store", 'notes.store')->name('show', 'notes.show');
+    Route::resource('note', NotesController::class)
+        ->only(['index', 'store', 'show', 'update', 'destroy'])->name("index", "notes.index")->name("store", 'notes.store')->name('show', 'notes.show')->name('update', 'notes.update');
 });
 
-Route::get('/list', [UserPaginationController::class, 'index']);
+// Route::get('/list', [UserPaginationController::class, 'index']);
 
 require __DIR__ . '/auth.php';
